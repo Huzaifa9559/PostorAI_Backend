@@ -42,6 +42,10 @@ const common = {
   print: (...msg) => console.log(moment().format(), ...msg),
   handleErrorResponse: (res, status = 500, message = "Something went Wrong") =>
     res.status(status).json({ success: false, message }),
+  /**
+   * @param {import("express").Response} res
+   * @param {() => Promise<any>} action
+   */
   api: async (res, action) => {
     try {
       await action();

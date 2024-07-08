@@ -19,7 +19,7 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
       media_type: {
-        type: DataTypes.ENUM(Object.values(MEDIA_TYPES)),
+        type: DataTypes.STRING,
         allowNull: false,
       },
     },

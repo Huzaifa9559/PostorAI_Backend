@@ -1,4 +1,5 @@
 const { Model, DataTypes } = require("sequelize");
+const { POST_STATUSES } = require("../utils/constants");
 
 module.exports = (sequelize) => {
   class Post extends Model {
@@ -31,6 +32,11 @@ module.exports = (sequelize) => {
       platforms: {
         type: DataTypes.JSON,
         allowNull: false,
+      },
+      status: {
+        type: DataTypes.ENUM(Object.values(POST_STATUSES)),
+        allowNull: false,
+        defaultValue: POST_STATUSES.ACTIVE,
       },
       scheduled_at: {
         type: DataTypes.DATE,

@@ -7,5 +7,6 @@ router.post("/", upload.array("media", 3), controller.createPosts);
 router.post("/caption", controller.generateCaption);
 router.get("/:id", controller.getPost);
 router.get("/", controller.getPosts);
+router.delete("/:id", controller.deletePost);
 
 module.exports = router;

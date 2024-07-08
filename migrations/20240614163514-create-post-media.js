@@ -27,7 +27,7 @@ module.exports = {
         allowNull: false,
       },
       media_type: {
-        type: Sequelize.ENUM("image", "video"),
+        type: Sequelize.STRING,
         allowNull: false,
       },
       created_at: {

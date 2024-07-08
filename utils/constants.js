@@ -7,6 +7,11 @@ const constants = {
     createdAt: "created_at",
     updatedAt: "updated_at",
   },
+  POST_STATUSES: {
+    ACTIVE: "active",
+    DRAFT: "draft",
+    SCHEDULED: "scheduled",
+  },
   USER_ROLES: {
     PERSONAL: "personal",
     STUDENT: "student",

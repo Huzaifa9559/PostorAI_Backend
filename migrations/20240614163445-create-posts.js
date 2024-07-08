@@ -1,5 +1,7 @@
 "use strict";
 
+const { POST_STATUSES } = require('../utils/constants');
+
 const tableName = "posts";
 
 /** @type {import('sequelize-cli').Migration} */
@@ -33,8 +35,13 @@ module.exports = {
         type: Sequelize.TEXT("tiny"),
       },
       platforms: {
-        type: Sequelize.JSON,
+        type: Sequelize.TEXT,
         allowNull: false,
+      },
+      status: {
+        type: Sequelize.ENUM(Object.values(POST_STATUSES)),
+        allowNull: false,
+        defaultValue: POST_STATUSES.ACTIVE,
       },
       scheduled_at: {
         type: Sequelize.DATE,
