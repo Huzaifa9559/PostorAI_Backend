@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { pick, random, omit } = require("lodash");
+const nodemailer = require("nodemailer")
 const MailChimp = require("@mailchimp/mailchimp_transactional");
 const { User, Otp } = require("../models");
 const {
@@ -25,6 +26,7 @@ async function signUp(req, res) {
     if (doesExist) {
       return res.status(400).json({
         success: false,
+        statusCode: 400,
         message: "A user with this email already exists",
       });
     }
@@ -34,6 +36,7 @@ async function signUp(req, res) {
 
     return res.json({
       success: true,
+      statusCode: 201,
       data: omit(newUser.get({ plain: true }), [
         "password",
         "created_at",
@@ -44,6 +47,7 @@ async function signUp(req, res) {
     console.log(err.message);
     return res.status(500).json({
       success: false,
+      statusCode: 500,
       message: err.message || "Internal Server Error",
     });
   }
@@ -64,7 +68,8 @@ async function signIn(req, res) {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "No user with this email already exists",
+        statusCode: 404,
+        message: "Invalid credentials",
       });
     }
 
@@ -83,7 +88,7 @@ async function signIn(req, res) {
     const token = jwt.sign(pUser, JWT_SECRET_KEY, {
       expiresIn: "7d",
     });
-    return res.json({ success: true, token, data: pUser });
+    return res.json({ success: true, statusCode: 200, token, data: pUser });
   } catch (err) {
     console.log(err);
     return res
@@ -105,36 +110,52 @@ const createOtp = (userId) =>
  * @returns
  */
 async function initiatePasswordResetRequest(req, res) {
+  const { email } = req.body;
   try {
     const user = await User.findOne({
-      where: { email: req.body.email },
+      where: { email },
       raw: true,
     });
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "No user with this email already exists",
+        statusCode: 404,
+        message: "Email not exist",
       });
     }
-    // const otp = await createOtp(user.id);
-    // Sending OTP email
-    // mailchimp.messages.send({
-    //   message: {
-    //     from_email: MAILCHIMP_EMAIL,
-    //     subject: "Password Reset Request",
-    //     text: `Your OTP for password recovery is ${otp.code}`,
-    //     to: [
-    //       {
-    //         email: user.email,
-    //         type: "to",
-    //       },
-    //     ],
-    //   },
-    // });
-    return res.json({ success: true, message: "OTP Sent" });
+    else {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: 'develope.coding@gmail.com',
+          pass: 'dgsw wbnx uhjy zmhk',
+        },
+      });
+
+      const otp = Math.floor(100000 + Math.random() * 900000);
+      const mailOptions = {
+        from: 'develope.coding@gmail.com',
+        to: email,
+        subject: 'Your OTP Code',
+        text: `Your OTP code is ${otp}`,
+      };
+
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.log(error)
+          return res.status(500).send('Error sending email');
+        }
+        res.status(200).send({
+          success: true,
+          statusCode: 200, message: 'OTP sent successfully', otp
+        });
+      });
+    }
+
   } catch (err) {
     return res.status(500).json({
       success: false,
+      statusCode: 500,
       message: err.message || "Internal Server Error",
     });
   }
@@ -183,6 +204,8 @@ async function verifyOtp(req, res) {
   }
 }
 
+
+
 /**
  *
  * @param {import("express").Request} req
@@ -190,6 +213,7 @@ async function verifyOtp(req, res) {
  * @returns
  */
 async function resetPassword(req, res) {
+  const { email, password } = req.body
   try {
     const user = await User.findOne({
       where: { email: req.body.email },
@@ -198,27 +222,26 @@ async function resetPassword(req, res) {
     if (!user) {
       return res.status(404).json({
         success: false,
+        statusCode: 404,
         message: "No user with this email already exists",
       });
     }
-    if (req.body.password !== req.body.confirm_password) {
-      return res.status(400).json({
-        success: false,
-        message: "Password and 'Confirm Password' fields don't match",
-      });
+    else {
+      await User.update(
+        { password: bcrypt.hashSync(password, 10) },
+        { where: { email } }
+      );
+      return res.json({ success: true, statusCode: 200, message: "Password successfully updated", });
     }
-    await User.update(
-      { password: bcrypt.hashSync(req.body.password, 10) },
-      { where: { id: user.id } }
-    );
-    return res.json({ success: true });
   } catch (err) {
     return res.status(500).json({
       success: false,
+      statusCode: 500,
       message: err.message || "Internal Server Error",
     });
   }
 }
+
 
 module.exports = {
   signUp,

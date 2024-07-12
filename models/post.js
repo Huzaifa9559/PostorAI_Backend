@@ -46,6 +46,10 @@ module.exports = (sequelize) => {
         type: DataTypes.DATE,
         allowNull: true, // null means post instantly
       },
+      post_status: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true, // null means post instantly
+      }
     },
     {
       sequelize,

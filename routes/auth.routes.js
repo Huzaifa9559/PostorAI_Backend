@@ -5,7 +5,7 @@ const authenticate = require("../middlewares/token-validator");
 
 router.post("/signup", controller.signUp);
 router.post("/login", controller.signIn);
-router.post("/forgot_password", controller.initiatePasswordResetRequest);
+router.post("/forgot-password", controller.initiatePasswordResetRequest);
 router.post("/verify_otp", controller.verifyOtp);
 router.post("/reset_password", controller.resetPassword);
 
