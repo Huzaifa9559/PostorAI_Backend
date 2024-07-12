@@ -50,10 +50,12 @@ const common = {
     try {
       await action();
     } catch (error) {
+      console.log(error)
       common.handleErrorResponse(res);
       common.print(error);
     }
   },
+
   uploadFileToS3: (fileName, filePath) => {
     return new Promise((resolve) => {
       s3.upload(

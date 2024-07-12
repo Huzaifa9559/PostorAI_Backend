@@ -43,6 +43,10 @@ module.exports = {
         allowNull: false,
         defaultValue: POST_STATUSES.ACTIVE,
       },
+      meridian: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
       scheduled_at: {
         type: Sequelize.DATE,
         allowNull: true,
