@@ -45,10 +45,6 @@ module.exports = (sequelize) => {
       scheduled_at: {
         type: DataTypes.DATE,
         allowNull: true, // null means post instantly
-      },
-      post_status: {
-        type: DataTypes.BOOLEAN,
-        allowNull: true, // null means post instantly
       }
     },
     {
