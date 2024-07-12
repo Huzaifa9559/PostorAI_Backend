@@ -11,95 +11,18 @@ const { default: Groq } = require("groq-sdk");
 
 const groq = new Groq({ apiKey: GROQ_API_KEY });
 
-// /**
-//  *
-//  * @param {import("express").Request} req
-//  * @param {import("express").Response} res
-//  * @returns
-//  */
-// module.exports.createPost = async (req, res) => {
-//   try {
-//     const {
-//       content,
-//       media_urls: mediaUrls,
-//       user_id: userId = req.user.id,
-//       scheduled_at: scheduledAt = null,
-//     } = req.body;
-
-//     const post = await Post.create({
-//       user_id: userId,
-//       content,
-//       scheduled_at: scheduledAt,
-//     });
-
-//     if (mediaUrls && mediaUrls.length > 0) {
-//       const postMedia = mediaUrls.map((url) => ({
-//         post_id: post.id,
-//         media_url: url,
-//         media_type: url.endsWith(".mp4") ? "video" : "image",
-//       }));
-
-//       await PostMedia.bulkCreate(postMedia);
-//     }
-
-//     if (scheduledAt) {
-//       schedule.scheduleJob(new Date(scheduledAt), () =>
-//         postToSocialMedia(post, userId)
-//       );
-//       return res.status(201).json({ message: "Post scheduled successfully." });
-//     } else {
-//       await postToSocialMedia(post, userId);
-//       return res
-//         .status(201)
-//         .json({ message: "Post created and shared successfully." });
-//     }
-//   } catch (error) {
-//     console.error("Error creating post:", error);
-//     res.status(500).json({ message: "Internal server error." });
-//   }
-// };
-
-async function uploadPostsToPlatforms(platforms, post, files) {
-  return [];
-  const platformResponses = await parallel(platforms, (platform) =>
-    uploadPostToPlatform(platform, post, files)
-  );
-  const postPlatforms = [];
-  for (const platformResponse of platformResponses) {
-    if (platformResponse.id) {
-      postPlatforms.push({
-        post_id: post.id,
-        platform_type: platformResponse.platform,
-        platform_post_id: platformResponse.id,
-      });
-    } else {
-      // postPlatforms.push({
-      //   platform_type: platformResponse.platform,
-      //   error: platformResponse.error,
-      // });
-    }
-  }
-  return postPlatforms;
+async function createPostMedia(postId, mediaUrls, transaction) {
+  const postMedia = mediaUrls.map((url) => ({
+    post_id: postId,
+    media_url: url,
+    media_type: url.endsWith(".mp4") ? "video" : "image",
+  }));
+  await PostMedia.bulkCreate(postMedia, { transaction });
 }
 
-/**
- *
- * @param {import("express").Request} req
- * @param {import("express").Response} res
- * @returns
- */
-module.exports.createPosts = async (req, res) => {
-  const {
-    title,
-    desc,
-    status,
-    scheduled_at: scheduledAt,
-  } = req.body;
-  const userId = req.body.id || req.user.id;;
-  const files = req.files;
-
-  const hashtags = JSON.parse(req.body.hashtags || "[]");
-  const platforms = JSON.parse(req.body.platforms || "[]");
+async function schedulePost(post, userId, scheduledAt) {
+  schedule.scheduleJob(new Date(scheduledAt), () => postToSocialMedia(post, userId));
+}
 
 async function handleFileUploads(userId, files, transaction) {
   const postMedias = [];
@@ -111,13 +34,9 @@ async function handleFileUploads(userId, files, transaction) {
     if (!s3Url) throw new Error("Failed to upload your media files to AWS");
     const postMedia = await PostMedia.create(
       {
-        user_id: userId,
-        title,
-        desc,
-        status,
-        hashtags: hashtags.join(","),
-        scheduled_at: scheduledAt,
-        platforms: JSON.stringify(platforms),
+        post_id: post.id,
+        media_url: s3Url,
+        media_type: file.mimetype.includes("video") ? "video" : "image",
       },
       { transaction }
     );
@@ -239,9 +158,7 @@ module.exports = {
   generateCaption: (req, res) => api(res, async () => {
     const { title } = req.body;
     if (!title) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Title is missing in the body" });
+      return res.status(400).json({ success: false, message: "Title is missing in the body" });
     }
 
     const prompt = `I'll give you a JSON object which stores either 'title' key or a 'desc' key. Based on it's content, I need you to give me a JSON object with the following keys: 'title' (255 characters max), 'desc' (1000 words max), 'hashtags' (8 max, an array, each item within it having '#' in the beginning). Generate the description based on title and vice versa in case it's missing. Your response should not have anything except this JSON object, don't enclose it in triple backticks either. The object: ${JSON.stringify(req.body)}`;
@@ -252,4 +169,4 @@ module.exports = {
     const data = JSON.parse(response.choices[0]?.message?.content || "");
     return res.json({ success: true, data });
   })
-}
+};
